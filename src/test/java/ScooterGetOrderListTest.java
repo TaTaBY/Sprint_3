@@ -10,92 +10,39 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.notNullValue;
 
-@RunWith(Parameterized.class)
-public class ScooterCreateOrderTest {
-
-    private String firstName;
-    private String lastName;
-    private String address;
-    private String metroStation;
-    private String phone;
-    private int rentTime;
-    private String deliveryDate;
-    private String comment;
-    private String[] color;
-    static private String randomString = RandomStringUtils.randomAlphabetic(10);
-    static private int randomInt = RandomUtils.nextInt(1, 11);
-    static private String randomDate = "2020-06-" + RandomUtils.nextInt(11, 30);
-    private int track;
-
-    public ScooterCreateOrderTest(String firstName, String lastName, String address, String metroStation, String phone,
-                                  int rentTime, String deliveryDate, String comment, String[] color) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.address = address;
-        this.metroStation = metroStation;
-        this.phone = phone;
-        this.rentTime = rentTime;
-        this.deliveryDate = deliveryDate;
-        this.comment = comment;
-        this.color = color;
-    }
-
-
-
-    @Parameterized.Parameters
-    public static Object[][] getOrderData() {
-        return new Object[][]{
-                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
-                        randomString, new String[] {"BLACK"}},
-                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
-                        randomString, new String[] {"GREY"}},
-                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
-                        randomString, new String[] {"BLACK", "GREY"}},
-                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
-                        randomString, new String[] {}}
-        };
-    }
-
-
-
+public class ScooterGetOrderListTest {
 
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
     }
 
-    @After
-    public void tearDown() {
-        String cancelBody = "{\"track\":" + track + "}";
-        given()
+    @Test
+    @DisplayName("Check status code and order list of GET /api/v1/orders")
+    public void checkStatusCodeGetOrderList() {
+        Response response = given()
                 .header("Content-type", "application/json")
-                .and()
-                .body(cancelBody)
                 .when()
-                .put("/api/v1/orders/cancel");
+                .get("/api/v1/orders");
+        response.then()
+                .assertThat()
+                .statusCode(200)
+                .and()
+                .body("orders", notNullValue());
     }
 
     @Test
-    @DisplayName("Check status code and track of /api/v1/orders when data is valid (full check for field color)")
-    public void checkStatusCodeAndBodyCreateOrderWithValidData() {
-        CreateOrderPOJO createOrderPOJO = new CreateOrderPOJO(firstName, lastName, address, metroStation,
-                phone, rentTime, deliveryDate, comment, color);
+    @DisplayName("Check order list not null of GET /api/v1/orders")
+    public void checkBodyGetOrderList() {
         Response response = given()
                 .header("Content-type", "application/json")
-                .and()
-                .body(createOrderPOJO)
                 .when()
-                .post("/api/v1/orders");
+                .get("/api/v1/orders");
         response.then()
                 .assertThat()
-                .statusCode(201)
-                .and()
-                .body("track", notNullValue());
-        String responseString = response.asString();
-        JsonPath jsonPath = new JsonPath(responseString);
-        track = jsonPath.getInt("track");
+                .body("orders", notNullValue());
     }
 }

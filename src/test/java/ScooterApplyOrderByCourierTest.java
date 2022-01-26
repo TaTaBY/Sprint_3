@@ -2,7 +2,6 @@ import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -10,16 +9,15 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 
-import static io.restassured.RestAssured.delete;
-import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterDeleteCourierTest {
+public class ScooterApplyOrderByCourierTest {
 
 
     private int randomNotExist = RandomUtils.nextInt(10000000, 99999999);
-    private String courierId;
+    private int courierId;
+    private int orderId;
 
 
     @Before
@@ -36,7 +34,14 @@ public class ScooterDeleteCourierTest {
                 .post("/api/v1/courier/login")
                 .asString();
         JsonPath jsonPath = new JsonPath(response);
-        courierId = jsonPath.getString("id");
+        courierId = jsonPath.getInt("id");
+        String responseOrders = given()
+                .header("Content-type", "application/json")
+                .when()
+                .get("/api/v1/orders")
+                .asString();
+        JsonPath jsonPathOfOrderId = new JsonPath(responseOrders);
+        orderId = jsonPathOfOrderId.getInt("orders[0].id");
     }
 
     @After
@@ -45,41 +50,80 @@ public class ScooterDeleteCourierTest {
     }
 
     @Test
-    @DisplayName("Check message error of /api/v1/courier/:id when id is non-exist")
-    public void checkMessageErrorDeleteCourierWhenIdNonExist() {
+    @DisplayName("Check success body of /api/v1/orders/accept/:id?courierId")
+    public void checkSuccessBodyApplyByCourierWhenDataIsValid() {
         Response response = given()
                 .header("Content-type", "application/json")
                 .when()
-                .delete("/api/v1/courier/" + randomNotExist);
+                .queryParam("courierId", courierId)
+                    .put("api/v1/orders/accept/" + orderId);
         response.then()
                 .assertThat()
-                .body("message", equalTo("Курьера с таким id нет"));
-    }
-
-    @Test
-    @DisplayName("Check body of /api/v1/courier/:id when id is valid")
-    public void checkMessageDeleteCourierWhenDataIsValid() {
-        Response response = given()
-                .header("Content-type", "application/json")
-                .when()
-                .delete("/api/v1/courier/" + courierId);
-        response.then()
-                .assertThat()
+                .statusCode(200)
+                .and()
                 .body("ok", equalTo(true));
     }
 
     @Test
-    @DisplayName("Check message error of /api/v1/courier/:id when id is missing")
-    public void checkMessageErrorDeleteCourierWhenIdMissing() {
+    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderID missing")
+    public void checkErrorBodyApplyByCourierWhenOrderIdMissing() {
         Response response = given()
                 .header("Content-type", "application/json")
-                .and()
-                .body("{}")
                 .when()
-                .delete("/api/v1/courier/");
+                .queryParam("courierId", courierId)
+                .put("api/v1/orders/accept/");
         response.then()
                 .assertThat()
-                .body("message", equalTo("Недостаточно данных для удаления курьера"));
+                .statusCode(400)
+                .and()
+                .body("message", equalTo("Недостаточно данных для поиска"));
     }
+
+    @Test
+    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when courierId missing")
+    public void checkErrorBodyApplyByCourierWhenCourierIdMissing() {
+        Response response = given()
+                .header("Content-type", "application/json")
+                .when()
+                .queryParam("courierId")
+                .put("api/v1/orders/accept/" + orderId);
+        response.then()
+                .assertThat()
+                .statusCode(400)
+                .and()
+                .body("message", equalTo("Недостаточно данных для поиска"));
+    }
+
+    @Test
+    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when courierId non-exist")
+    public void checkErrorBodyApplyByCourierWhenCourierIdNonExist() {
+        Response response = given()
+                .header("Content-type", "application/json")
+                .when()
+                .queryParam("courierId", randomNotExist)
+                .put("api/v1/orders/accept/" + orderId);
+        response.then()
+                .assertThat()
+                .statusCode(404)
+                .and()
+                .body("message", equalTo("Курьера с таким id не существует"));
+    }
+
+    @Test
+    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderId non-exist")
+    public void checkErrorBodyApplyByCourierWhenOrderIdNonExist() {
+        Response response = given()
+                .header("Content-type", "application/json")
+                .when()
+                .queryParam("courierId", courierId)
+                .put("api/v1/orders/accept/" + randomNotExist);
+        response.then()
+                .assertThat()
+                .statusCode(404)
+                .and()
+                .body("message", equalTo("Заказа с таким id не существует"));
+    }
+
+
 
 }

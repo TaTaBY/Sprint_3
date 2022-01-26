@@ -1,26 +1,34 @@
-import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.ArrayList;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.delete;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterRegisterCourierTest {
+public class ScooterLoginCourierTest {
 
-    final static private String login = RandomStringUtils.randomAlphabetic(10);
-    final static private String password = RandomStringUtils.randomAlphabetic(10);
-    final static private String firstName = RandomStringUtils.randomAlphabetic(10);
+
+    private String login;
+    private String password;
+    private String random = RandomStringUtils.randomAlphabetic(10);
 
 
     @Before
     public void setUp() {
         RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
+        ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
+        ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
+        login = loginPass.get(0);
+        password = loginPass.get(1);
     }
 
     @After
@@ -29,7 +37,7 @@ public class ScooterRegisterCourierTest {
         String response = given()
                 .header("Content-type", "application/json")
                 .and()
-                .body(registerCourierLogin) // заполни body
+                .body(registerCourierLogin)
                 .when()
                 .post("/api/v1/courier/login")
                 .asString();
@@ -39,163 +47,184 @@ public class ScooterRegisterCourierTest {
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier when data is valid")
-    public void checkStatusCodeCreateCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password,firstName);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO) // заполни body
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(201);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is valid")
-    public void checkMessageCreateCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password,firstName);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO) // заполни body
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("ok", equalTo(true));
-    }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is valid, but courier exist")
-    public void checkStatusCodeCreateDuplicateCourier() {
-        ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
-        ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
+    @DisplayName("Check status code of /api/v1/courier/login when data is valid")
+    public void checkStatusCodeLoginCourierWithValidData() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password);
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(registerCourierPOJO)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
-                .statusCode(409);
+                .statusCode(200);
     }
 
     @Test
-    @DisplayName("Check message of /api/v1/courier when data is valid, but courier exist")
-    public void checkMessageCreateDuplicateCourier() {
-        ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
-        ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
+    @DisplayName("Check id of /api/v1/courier/login when data is valid")
+    public void checkIdAfterLoginCourierWithValidData() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password);
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
-                .body(registerCourierPOJO) // заполни body
+                .body(registerCourierPOJO)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
-                .body("message", equalTo("Этот логин уже используется"));
+                .body("id", notNullValue());
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing password field")
-    public  void checkStatusCodeCreateCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
+    @DisplayName("Check status code of /api/v1/courier/login when login is valid, but password is invalid")
+    public void checkStatusCodeLoginCourierWithIncorrectPassword() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, random);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("Check message of /api/v1/courier/login when login is valid, but password is invalid")
+    public void checkMessageLoginCourierWithIncorrectPassword() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, random);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .body("message", equalTo("Учетная запись не найдена"));
+    }
+
+    @Test
+    @DisplayName("Check status code of /api/v1/courier/login when login is invalid, but password is valid")
+    public void checkStatusCodeLoginCourierWithIncorrectLogin() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, password);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("Check message of /api/v1/courier/login when login is invalid, but password is valid")
+    public void checkMessageLoginCourierWithIncorrectLogin() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, password);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .body("message", equalTo("Учетная запись не найдена"));
+    }
+
+    @Test
+    @DisplayName("Check status code of /api/v1/courier/login when login is invalid, but password is invalid")
+    public void checkStatusCodeLoginWithNonExistCourier() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, random);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .statusCode(404);
+    }
+
+    @Test
+    @DisplayName("Check message of /api/v1/courier/login when login is invalid, but password is invalid")
+    public void checkMessageLoginWithNonExistCourier() {
+        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, random);
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(registerCourierPOJO)
+                .when()
+                .post("/api/v1/courier/login");
+        response.then()
+                .assertThat()
+                .body("message", equalTo("Учетная запись не найдена"));
+    }
+
+
+    @Test
+    @DisplayName("Check status code of /api/v1/courier/login when data is invalid, missing password field")
+    public  void checkStatusCodeLoginCourierWithoutFillInPassword() {
+        String registerBody = "{\"login\":\"" + login + "\"}";
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(registerBody)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
                 .statusCode(400);
     }
 
     @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing password field")
-    public  void checkMessageCreateCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
+    @DisplayName("Check message of /api/v1/courier/login when data is invalid, missing password field")
+    public  void checkMessageLoginCourierWithoutFillInPassword() {
+        String registerBody = "{\"login\":\"" + login + "\"}";
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(registerBody)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+                .body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing password field")
-    public  void checkStatusCodeCreateCourierWithoutFillInLogin() {
-        String registerBody = "{\"password\":\"" + password + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
+    @DisplayName("Check status code of /api/v1/courier/login when data is invalid, missing login field")
+    public  void checkStatusCodeLoginCourierWithoutFillInLogin() {
+        String registerBody = "{\"password\":\"" + password + "\"}";
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(registerBody)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
                 .statusCode(400);
     }
 
     @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing login field")
-    public  void checkMessageCreateCourierWithoutFillInLogin() {
-        String registerBody = "{\"password\":\"" + password + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
+    @DisplayName("Check message of /api/v1/courier/login when data is invalid, missing login field")
+    public  void checkMessageLoginCourierWithoutFillInLogin() {
+        String registerBody = "{\"password\":\"" + password + "\"}";
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(registerBody)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/courier/login");
         response.then()
                 .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing firstName field")
-    public  void checkStatusCodeCreateCourierWithoutFillInFirstName() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing firstName field")
-    public  void checkMessageCreateCourierWithoutFillInFirstName() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
+                .body("message", equalTo("Недостаточно данных для входа"));
     }
 
 }

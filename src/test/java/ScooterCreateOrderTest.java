@@ -1,21 +1,65 @@
-import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.*;
-
-import java.util.ArrayList;
+import org.apache.commons.lang3.RandomUtils;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static io.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterRegisterCourierTest {
+@RunWith(Parameterized.class)
+public class ScooterCreateOrderTest {
 
-    final static private String login = RandomStringUtils.randomAlphabetic(10);
-    final static private String password = RandomStringUtils.randomAlphabetic(10);
-    final static private String firstName = RandomStringUtils.randomAlphabetic(10);
+    private String firstName;
+    private String lastName;
+    private String address;
+    private String metroStation;
+    private String phone;
+    private int rentTime;
+    private String deliveryDate;
+    private String comment;
+    private String[] color;
+    static private String randomString = RandomStringUtils.randomAlphabetic(10);
+    static private int randomInt = RandomUtils.nextInt(1, 11);
+    static private String randomDate = "2020-06-" + RandomUtils.nextInt(11, 30);
+    private int track;
+
+    public ScooterCreateOrderTest(String firstName, String lastName, String address, String metroStation, String phone,
+                                  int rentTime, String deliveryDate, String comment, String[] color) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.address = address;
+        this.metroStation = metroStation;
+        this.phone = phone;
+        this.rentTime = rentTime;
+        this.deliveryDate = deliveryDate;
+        this.comment = comment;
+        this.color = color;
+    }
+
+
+
+    @Parameterized.Parameters
+    public static Object[][] getOrderData() {
+        return new Object[][]{
+                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
+                        randomString, new String[] {"BLACK"}},
+                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
+                        randomString, new String[] {"GREY"}},
+                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
+                        randomString, new String[] {"BLACK", "GREY"}},
+                {randomString, randomString, randomString, randomString, randomString, randomInt, randomDate,
+                        randomString, new String[] {}}
+        };
+    }
+
+
 
 
     @Before
@@ -25,177 +69,33 @@ public class ScooterRegisterCourierTest {
 
     @After
     public void tearDown() {
-        RegisterCourierPOJO registerCourierLogin = new RegisterCourierPOJO(login, password);
-        String response = given()
+        String cancelBody = "{\"track\":" + track + "}";
+        given()
                 .header("Content-type", "application/json")
                 .and()
-                .body(registerCourierLogin) // заполни body
+                .body(cancelBody)
                 .when()
-                .post("/api/v1/courier/login")
-                .asString();
-        JsonPath jsonPath = new JsonPath(response);
-        String userId = jsonPath.getString("id");
-        delete("/api/v1/courier/" + userId);
+                .put("/api/v1/orders/cancel");
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier when data is valid")
-    public void checkStatusCodeCreateCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password,firstName);
+    @DisplayName("Check status code and track of /api/v1/orders when data is valid (full check for field color)")
+    public void checkStatusCodeAndBodyCreateOrderWithValidData() {
+        CreateOrderPOJO createOrderPOJO = new CreateOrderPOJO(firstName, lastName, address, metroStation,
+                phone, rentTime, deliveryDate, comment, color);
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
-                .body(registerCourierPOJO) // заполни body
+                .body(createOrderPOJO)
                 .when()
-                .post("/api/v1/courier");
+                .post("/api/v1/orders");
         response.then()
                 .assertThat()
-                .statusCode(201);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is valid")
-    public void checkFlagOkAfterCreateCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password,firstName);
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(201)
                 .and()
-                .body(registerCourierPOJO) // заполни body
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("ok", equalTo(true));
+                .body("track", notNullValue());
+        String responseString = response.asString();
+        JsonPath jsonPath = new JsonPath(responseString);
+        track = jsonPath.getInt("track");
     }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is valid, but courier exist")
-    public void checkStatusCodeCreateDuplicateCourier() {
-        ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
-        ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(409);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is valid, but courier exist")
-    public void checkMessageCreateDuplicateCourier() {
-        ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
-        ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO) // заполни body
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("message", equalTo("Этот логин уже используется"));
-    }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing password field")
-    public  void checkStatusCodeCreateCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing password field")
-    public  void checkMessageCreateCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing login field")
-    public  void checkStatusCodeCreateCourierWithoutFillInLogin() {
-        String registerBody = "{\"password\":\"" + password + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing login field")
-    public  void checkMessageCreateCourierWithoutFillInLogin() {
-        String registerBody = "{\"password\":\"" + password + "\","
-                + "\"firstName\":\"" + firstName + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
-    @Test
-    @DisplayName("Check status code of /api/v1/courier when data is invalid, missing firstName field")
-    public  void checkStatusCodeCreateCourierWithoutFillInFirstName() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier when data is invalid, missing firstName field")
-    public  void checkMessageCreateCourierWithoutFillInFirstName() {
-        String registerBody = "{\"login\":\"" + login + "\","
-                + "\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier");
-        response.then()
-                .assertThat()
-                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
-    }
-
 }
