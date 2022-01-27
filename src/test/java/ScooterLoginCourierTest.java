@@ -1,12 +1,11 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 
 import static io.restassured.RestAssured.delete;
@@ -14,7 +13,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterLoginCourierTest {
+public class ScooterLoginCourierTest extends BaseTest {
 
 
     private String login;
@@ -24,7 +23,6 @@ public class ScooterLoginCourierTest {
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
         ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
         ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
         login = loginPass.get(0);
@@ -33,197 +31,104 @@ public class ScooterLoginCourierTest {
 
     @After
     public void tearDown() {
-        RegisterCourierPOJO registerCourierLogin = new RegisterCourierPOJO(login, password);
+        Courier registerCourierLogin = new Courier(login, password);
         String response = given()
-                .header("Content-type", "application/json")
-                .and()
                 .body(registerCourierLogin)
                 .when()
-                .post("/api/v1/courier/login")
+                .post(EndPoints.COURIER_LOGIN)
                 .asString();
         JsonPath jsonPath = new JsonPath(response);
         String userId = jsonPath.getString("id");
-        delete("/api/v1/courier/" + userId);
+        delete(EndPoints.COURIER_REGISTER_OR_DELETE + userId);
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when data is valid")
+    @DisplayName("Check status code and body of /api/v1/courier/login when data is valid")
     public void checkStatusCodeLoginCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO)
+        Courier courier = new Courier(login, password);
+        given()
+                .body(courier)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(200);
-    }
-
-    @Test
-    @DisplayName("Check id of /api/v1/courier/login when data is valid")
-    public void checkIdAfterLoginCourierWithValidData() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, password);
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_OK)
                 .and()
-                .body(registerCourierPOJO)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("id", notNullValue());
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when login is valid, but password is invalid")
-    public void checkStatusCodeLoginCourierWithIncorrectPassword() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, random);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO)
+    @DisplayName("Check status code and body of /api/v1/courier/login when login is valid, but password is invalid")
+    public void checkStatusCodeBodyLoginCourierWithIncorrectPassword() {
+        Courier courier = new Courier(login, random);
+        given()
+                .body(courier)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(404);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier/login when login is valid, but password is invalid")
-    public void checkMessageLoginCourierWithIncorrectPassword() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(login, random);
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
-                .body(registerCourierPOJO)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when login is invalid, but password is valid")
-    public void checkStatusCodeLoginCourierWithIncorrectLogin() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, password);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO)
+    @DisplayName("Check status code and body of /api/v1/courier/login when login is invalid, but password is valid")
+    public void checkStatusCodeBodyLoginCourierWithIncorrectLogin() {
+        Courier courier = new Courier(random, password);
+        given()
+                .body(courier)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(404);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier/login when login is invalid, but password is valid")
-    public void checkMessageLoginCourierWithIncorrectLogin() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, password);
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
-                .body(registerCourierPOJO)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when login is invalid, but password is invalid")
-    public void checkStatusCodeLoginWithNonExistCourier() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, random);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerCourierPOJO)
+    @DisplayName("Check status code and body of /api/v1/courier/login when login and password invalid")
+    public void checkStatusCodeBodyLoginWithNonExistCourier() {
+        Courier courier = new Courier(random, random);
+        given()
+                .body(courier)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(404);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier/login when login is invalid, but password is invalid")
-    public void checkMessageLoginWithNonExistCourier() {
-        RegisterCourierPOJO registerCourierPOJO = new RegisterCourierPOJO(random, random);
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
-                .body(registerCourierPOJO)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
-
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when data is invalid, missing password field")
-    public  void checkStatusCodeLoginCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(registerBody)
+    @DisplayName("Check status code and body of /api/v1/courier/login when password field is missing")
+    public  void checkStatusCodeBodyLoginCourierWithoutFillInPassword() {
+        Courier courier = new Courier(login);
+        given()
+                .body(courier)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier/login when data is invalid, missing password field")
-    public  void checkMessageLoginCourierWithoutFillInPassword() {
-        String registerBody = "{\"login\":\"" + login + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                 .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Test
-    @DisplayName("Check status code of /api/v1/courier/login when data is invalid, missing login field")
-    public  void checkStatusCodeLoginCourierWithoutFillInLogin() {
+    @DisplayName("Check status code and body of /api/v1/courier/login when login field is missing")
+    public  void checkStatusCodeBodyLoginCourierWithoutFillInLogin() {
         String registerBody = "{\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
+        given()
                 .body(registerBody)
                 .when()
-                .post("/api/v1/courier/login");
-        response.then()
+                .post(EndPoints.COURIER_LOGIN)
+                .then()
                 .assertThat()
-                .statusCode(400);
-    }
-
-    @Test
-    @DisplayName("Check message of /api/v1/courier/login when data is invalid, missing login field")
-    public  void checkMessageLoginCourierWithoutFillInLogin() {
-        String registerBody = "{\"password\":\"" + password + "\"}";
-        Response response = given()
-                .header("Content-type", "application/json")
+                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                 .and()
-                .body(registerBody)
-                .when()
-                .post("/api/v1/courier/login");
-        response.then()
-                .assertThat()
                 .body("message", equalTo("Недостаточно данных для входа"));
     }
 

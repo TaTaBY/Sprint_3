@@ -1,6 +1,7 @@
 // импортируем RestAssured
 import io.restassured.RestAssured;
 // импортируем Response
+import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 // импортируем библиотеку генерации строк
 import org.apache.commons.lang3.RandomStringUtils;
@@ -36,7 +37,7 @@ public class ScooterRegisterCourier {
 
         // отправляем запрос на регистрацию курьера и сохраняем ответ в переменную response класса Response
         Response response =  given()
-                .header("Content-type", "application/json")
+                .contentType(ContentType.JSON)
                 .and()
                 .body(registerRequestBody)
                 .when()

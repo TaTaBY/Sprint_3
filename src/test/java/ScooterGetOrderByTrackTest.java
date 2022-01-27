@@ -1,43 +1,38 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
+import java.net.HttpURLConnection;
+import java.time.LocalDate;
 
-import static io.restassured.RestAssured.delete;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterGetOrderByTrackTest {
+public class ScooterGetOrderByTrackTest extends BaseTest {
 
 
-    private int randomNotExist = RandomUtils.nextInt(10000000, 99999999);
+    private int invalidId = RandomUtils.nextInt(10000000, 99999999);
     private int trackId;
     static private String randomString = RandomStringUtils.randomAlphabetic(10);
     static private int randomInt = RandomUtils.nextInt(1, 11);
-    static private String randomDate = "2020-06-" + RandomUtils.nextInt(11, 30);
+    static private String randomDate = LocalDate.now().plusDays(RandomUtils.nextInt(1,31)).toString();
 
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
-        CreateOrderPOJO createOrderPOJO = new CreateOrderPOJO(randomString, randomString, randomString, randomString,
+        Order order = new Order(randomString, randomString, randomString, randomString,
                 randomString, randomInt, randomDate, randomString);
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(createOrderPOJO)
+        String response = given()
+                .body(order)
                 .when()
-                .post("/api/v1/orders");
-        String responseString = response.asString();
-        JsonPath jsonPath = new JsonPath(responseString);
+                .post(EndPoints.ORDER_CREATE_OR_GET)
+                .asString();
+        JsonPath jsonPath = new JsonPath(response);
         trackId = jsonPath.getInt("track");
     }
 
@@ -45,24 +40,21 @@ public class ScooterGetOrderByTrackTest {
     public void tearDown() {
         String cancelBody = "{\"track\":" + trackId + "}";
         given()
-                .header("Content-type", "application/json")
-                .and()
                 .body(cancelBody)
                 .when()
-                .put("/api/v1/orders/cancel");
+                .put(EndPoints.ORDER_CANCEL);
     }
 
     @Test
     @DisplayName("Check success body of /api/v1/orders/track/t?")
     public void checkSuccessBodyGetByTrackOrderListWhenDataIsValid() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("t", trackId)
-                    .get("api/v1/orders/track");
-        response.then()
+                .get(EndPoints.ORDER_GET_BY_TRACK)
+                .then()
                 .assertThat()
-                .statusCode(200)
+                .statusCode(HttpURLConnection.HTTP_OK)
                 .and()
                 .body("order", notNullValue());
     }
@@ -70,14 +62,13 @@ public class ScooterGetOrderByTrackTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/track/t? when track is missing")
     public void checkErrorBodyGetByTrackOrderListWhenTrackMissing() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("t")
-                .get("api/v1/orders/track");
-        response.then()
+                .get(EndPoints.ORDER_GET_BY_TRACK)
+                .then()
                 .assertThat()
-                .statusCode(400)
+                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                 .and()
                 .body("message", equalTo("Недостаточно данных для поиска"));
     }
@@ -85,14 +76,13 @@ public class ScooterGetOrderByTrackTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/track/t? when track is non-exist")
     public void checkErrorBodyGetByTrackOrderListWhenTrackNonExist() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
-                .queryParam("t", randomNotExist)
-                .get("api/v1/orders/track");
-        response.then()
+                .queryParam("t", invalidId)
+                .get(EndPoints.ORDER_GET_BY_TRACK)
+                .then()
                 .assertThat()
-                .statusCode(404)
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
                 .body("message", equalTo("Заказ не найден"));
     }

@@ -1,8 +1,5 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -15,25 +12,22 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class ScooterDeleteCourierTest {
+public class ScooterDeleteCourierTest extends BaseTest {
 
 
-    private int randomNotExist = RandomUtils.nextInt(10000000, 99999999);
+    private int invalidId = RandomUtils.nextInt(10000000, 99999999);
     private String courierId;
 
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
         ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
         ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierLogin = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
+        Courier registerCourierLogin = new Courier(loginPass.get(0), loginPass.get(1));
         String response = given()
-                .header("Content-type", "application/json")
-                .and()
                 .body(registerCourierLogin)
                 .when()
-                .post("/api/v1/courier/login")
+                .post(EndPoints.COURIER_LOGIN)
                 .asString();
         JsonPath jsonPath = new JsonPath(response);
         courierId = jsonPath.getString("id");
@@ -41,17 +35,16 @@ public class ScooterDeleteCourierTest {
 
     @After
     public void tearDown() {
-        delete("/api/v1/courier/" + courierId);
+        delete(EndPoints.COURIER_REGISTER_OR_DELETE + courierId);
     }
 
     @Test
     @DisplayName("Check message error of /api/v1/courier/:id when id is non-exist")
     public void checkMessageErrorDeleteCourierWhenIdNonExist() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
-                .delete("/api/v1/courier/" + randomNotExist);
-        response.then()
+                .delete(EndPoints.COURIER_REGISTER_OR_DELETE + invalidId)
+                .then()
                 .assertThat()
                 .body("message", equalTo("Курьера с таким id нет"));
     }
@@ -59,11 +52,10 @@ public class ScooterDeleteCourierTest {
     @Test
     @DisplayName("Check body of /api/v1/courier/:id when id is valid")
     public void checkMessageDeleteCourierWhenDataIsValid() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
-                .delete("/api/v1/courier/" + courierId);
-        response.then()
+                .delete(EndPoints.COURIER_REGISTER_OR_DELETE + courierId)
+                .then()
                 .assertThat()
                 .body("ok", equalTo(true));
     }
@@ -71,13 +63,10 @@ public class ScooterDeleteCourierTest {
     @Test
     @DisplayName("Check message error of /api/v1/courier/:id when id is missing")
     public void checkMessageErrorDeleteCourierWhenIdMissing() {
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body("{}")
+        given()
                 .when()
-                .delete("/api/v1/courier/");
-        response.then()
+                .delete(EndPoints.COURIER_REGISTER_OR_DELETE)
+                .then()
                 .assertThat()
                 .body("message", equalTo("Недостаточно данных для удаления курьера"));
     }

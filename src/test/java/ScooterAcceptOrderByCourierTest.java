@@ -1,44 +1,39 @@
 import io.qameta.allure.junit4.DisplayName;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
-import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.equalTo;
 
-public class ScooterApplyOrderByCourierTest {
+public class ScooterAcceptOrderByCourierTest extends  BaseTest {
 
 
-    private int randomNotExist = RandomUtils.nextInt(10000000, 99999999);
+    private int invalidId = RandomUtils.nextInt(10000000, 99999999);
     private int courierId;
     private int orderId;
 
 
     @Before
     public void setUp() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru/";
         ScooterRegisterCourier scooterRegisterCourier = new ScooterRegisterCourier();
         ArrayList<String> loginPass = scooterRegisterCourier.registerNewCourierAndReturnLoginPassword();
-        RegisterCourierPOJO registerCourierLogin = new RegisterCourierPOJO(loginPass.get(0), loginPass.get(1));
+        Courier registerCourierLogin = new Courier(loginPass.get(0), loginPass.get(1));
         String response = given()
-                .header("Content-type", "application/json")
-                .and()
                 .body(registerCourierLogin)
                 .when()
-                .post("/api/v1/courier/login")
+                .post(EndPoints.COURIER_LOGIN)
                 .asString();
         JsonPath jsonPath = new JsonPath(response);
         courierId = jsonPath.getInt("id");
         String responseOrders = given()
-                .header("Content-type", "application/json")
                 .when()
-                .get("/api/v1/orders")
+                .get(EndPoints.ORDER_CREATE_OR_GET)
                 .asString();
         JsonPath jsonPathOfOrderId = new JsonPath(responseOrders);
         orderId = jsonPathOfOrderId.getInt("orders[0].id");
@@ -46,20 +41,19 @@ public class ScooterApplyOrderByCourierTest {
 
     @After
     public void tearDown() {
-        delete("/api/v1/courier/" + courierId);
+        delete(EndPoints.COURIER_REGISTER_OR_DELETE + courierId);
     }
 
     @Test
     @DisplayName("Check success body of /api/v1/orders/accept/:id?courierId")
     public void checkSuccessBodyApplyByCourierWhenDataIsValid() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("courierId", courierId)
-                    .put("api/v1/orders/accept/" + orderId);
-        response.then()
+                .put(EndPoints.ORDER_ACCEPT + orderId)
+                .then()
                 .assertThat()
-                .statusCode(200)
+                .statusCode(HttpURLConnection.HTTP_OK)
                 .and()
                 .body("ok", equalTo(true));
     }
@@ -67,14 +61,13 @@ public class ScooterApplyOrderByCourierTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderID missing")
     public void checkErrorBodyApplyByCourierWhenOrderIdMissing() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("courierId", courierId)
-                .put("api/v1/orders/accept/");
-        response.then()
+                .put(EndPoints.ORDER_ACCEPT)
+                .then()
                 .assertThat()
-                .statusCode(400)
+                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                 .and()
                 .body("message", equalTo("Недостаточно данных для поиска"));
     }
@@ -82,14 +75,13 @@ public class ScooterApplyOrderByCourierTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when courierId missing")
     public void checkErrorBodyApplyByCourierWhenCourierIdMissing() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("courierId")
-                .put("api/v1/orders/accept/" + orderId);
-        response.then()
+                .put(EndPoints.ORDER_ACCEPT + orderId)
+                .then()
                 .assertThat()
-                .statusCode(400)
+                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                 .and()
                 .body("message", equalTo("Недостаточно данных для поиска"));
     }
@@ -97,14 +89,13 @@ public class ScooterApplyOrderByCourierTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when courierId non-exist")
     public void checkErrorBodyApplyByCourierWhenCourierIdNonExist() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
-                .queryParam("courierId", randomNotExist)
-                .put("api/v1/orders/accept/" + orderId);
-        response.then()
+                .queryParam("courierId", invalidId)
+                .put(EndPoints.ORDER_ACCEPT + orderId)
+                .then()
                 .assertThat()
-                .statusCode(404)
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
                 .body("message", equalTo("Курьера с таким id не существует"));
     }
@@ -112,18 +103,15 @@ public class ScooterApplyOrderByCourierTest {
     @Test
     @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderId non-exist")
     public void checkErrorBodyApplyByCourierWhenOrderIdNonExist() {
-        Response response = given()
-                .header("Content-type", "application/json")
+        given()
                 .when()
                 .queryParam("courierId", courierId)
-                .put("api/v1/orders/accept/" + randomNotExist);
-        response.then()
+                .put(EndPoints.ORDER_ACCEPT + invalidId)
+                .then()
                 .assertThat()
-                .statusCode(404)
+                .statusCode(HttpURLConnection.HTTP_NOT_FOUND)
                 .and()
                 .body("message", equalTo("Заказа с таким id не существует"));
     }
-
-
 
 }
