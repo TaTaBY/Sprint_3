@@ -44,6 +44,7 @@ public class ScooterCreateOrderTest extends BaseTest {
     @DisplayName("Check status code and track of /api/v1/orders when data is valid (full check for field color)")
     public void checkStatusCodeAndBodyCreateOrderWithValidData() {
         Order order = new Order(color);
+        order.setUpFieldsForRequest();
         Response response = given()
                 .body(order)
                 .when()

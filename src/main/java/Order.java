@@ -43,14 +43,6 @@ public class Order {
     }
 
     public Order(String[] color) {
-        this.firstName = randomString;
-        this.lastName = randomString;
-        this.address = randomString;
-        this.metroStation = randomString;
-        this.phone = randomString;
-        this.rentTime = randomInt;
-        this.deliveryDate = randomDate;
-        this.comment = randomString;
         this.color = color;
     }
 
@@ -91,6 +83,17 @@ public class Order {
 
     public String[] getColor() {
         return color;
+    }
+
+    public void setUpFieldsForRequest () {
+        this.firstName = randomString;
+        this.lastName = randomString;
+        this.address = randomString;
+        this.metroStation = randomString;
+        this.phone = randomString;
+        this.rentTime = randomInt;
+        this.deliveryDate = randomDate;
+        this.comment = randomString;
     }
 
     @Override
