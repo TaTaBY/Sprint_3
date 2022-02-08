@@ -102,20 +102,20 @@ public class ScooterLoginCourierTest extends BaseTest {
                 .body("message", equalTo("Учетная запись не найдена"));
     }
 
-    @Test
-    @DisplayName("Check status code and body of /api/v1/courier/login when password field is missing")
-    public  void checkStatusCodeBodyLoginCourierWithoutFillInPassword() {
-        Courier courier = new Courier(login);
-        given()
-                .body(courier)
-                .when()
-                .post(EndPoints.COURIER_LOGIN)
-                .then()
-                .assertThat()
-                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
-                .and()
-                .body("message", equalTo("Недостаточно данных для входа"));
-    }
+//    @Test
+//    @DisplayName("Check status code and body of /api/v1/courier/login when password field is missing")
+//    public  void checkStatusCodeBodyLoginCourierWithoutFillInPassword() {
+//        Courier courier = new Courier(login);
+//        given()
+//                .body(courier)
+//                .when()
+//                .post(EndPoints.COURIER_LOGIN)
+//                .then()
+//                .assertThat()
+//                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
+//                .and()
+//                .body("message", equalTo("Недостаточно данных для входа"));
+//    }
 
     @Test
     @DisplayName("Check status code and body of /api/v1/courier/login when login field is missing")
