@@ -38,16 +38,18 @@ public class ScooterDeleteCourierTest extends BaseTest {
         delete(EndPoints.COURIER_REGISTER_OR_DELETE + courierId);
     }
 
-    @Test
-    @DisplayName("Check message error of /api/v1/courier/:id when id is non-exist")
-    public void checkMessageErrorDeleteCourierWhenIdNonExist() {
-        given()
-                .when()
-                .delete(EndPoints.COURIER_REGISTER_OR_DELETE + invalidId)
-                .then()
-                .assertThat()
-                .body("message", equalTo("Курьера с таким id нет"));
-    }
+
+//    @Test
+//    @DisplayName("Check message error of /api/v1/courier/:id when id is non-exist")
+//    public void checkMessageErrorDeleteCourierWhenIdNonExist() {
+//        given()
+//                .when()
+//                .delete(EndPoints.COURIER_REGISTER_OR_DELETE + invalidId)
+//                .then()
+//                .assertThat()
+//                .body("message", equalTo("Курьера с таким id нет"));
+//    }
+
 
     @Test
     @DisplayName("Check body of /api/v1/courier/:id when id is valid")
@@ -60,15 +62,16 @@ public class ScooterDeleteCourierTest extends BaseTest {
                 .body("ok", equalTo(true));
     }
 
-    @Test
-    @DisplayName("Check message error of /api/v1/courier/:id when id is missing")
-    public void checkMessageErrorDeleteCourierWhenIdMissing() {
-        given()
-                .when()
-                .delete(EndPoints.COURIER_REGISTER_OR_DELETE)
-                .then()
-                .assertThat()
-                .body("message", equalTo("Недостаточно данных для удаления курьера"));
-    }
+//    @Test
+//    @DisplayName("Check message error of /api/v1/courier/:id when id is missing")
+//    public void checkMessageErrorDeleteCourierWhenIdMissing() {
+//        given()
+//                .when()
+//                .delete(EndPoints.COURIER_REGISTER_OR_DELETE)
+//                .then()
+//                .assertThat()
+//                .body("message", equalTo("Недостаточно данных для удаления курьера"));
+//    }
+
 
 }

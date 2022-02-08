@@ -58,19 +58,19 @@ public class ScooterAcceptOrderByCourierTest extends  BaseTest {
                 .body("ok", equalTo(true));
     }
 
-    @Test
-    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderID missing")
-    public void checkErrorBodyApplyByCourierWhenOrderIdMissing() {
-        given()
-                .when()
-                .queryParam("courierId", courierId)
-                .put(EndPoints.ORDER_ACCEPT)
-                .then()
-                .assertThat()
-                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
-                .and()
-                .body("message", equalTo("Недостаточно данных для поиска"));
-    }
+//    @Test
+//    @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when orderID missing")
+//    public void checkErrorBodyApplyByCourierWhenOrderIdMissing() {
+//        given()
+//                .when()
+//                .queryParam("courierId", courierId)
+//                .put(EndPoints.ORDER_ACCEPT)
+//                .then()
+//                .assertThat()
+//                .statusCode(HttpURLConnection.HTTP_BAD_REQUEST)
+//                .and()
+//                .body("message", equalTo("Недостаточно данных для поиска"));
+//    }
 
     @Test
     @DisplayName("Check error body of /api/v1/orders/accept/:id?courierId when courierId missing")
