@@ -38,6 +38,7 @@ public class ScooterDeleteCourierTest extends BaseTest {
         delete(EndPoints.COURIER_REGISTER_OR_DELETE + courierId);
     }
 
+
 //    @Test
 //    @DisplayName("Check message error of /api/v1/courier/:id when id is non-exist")
 //    public void checkMessageErrorDeleteCourierWhenIdNonExist() {
@@ -48,6 +49,7 @@ public class ScooterDeleteCourierTest extends BaseTest {
 //                .assertThat()
 //                .body("message", equalTo("Курьера с таким id нет"));
 //    }
+
 
     @Test
     @DisplayName("Check body of /api/v1/courier/:id when id is valid")
@@ -70,5 +72,6 @@ public class ScooterDeleteCourierTest extends BaseTest {
 //                .assertThat()
 //                .body("message", equalTo("Недостаточно данных для удаления курьера"));
 //    }
+
 
 }

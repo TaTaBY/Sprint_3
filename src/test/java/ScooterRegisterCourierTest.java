@@ -59,6 +59,7 @@ public class ScooterRegisterCourierTest extends BaseTest {
 //                .body("message", equalTo("Этот логин уже используется"));
 //    }
 
+
     @Test
     @DisplayName("Check status code and body of /api/v1/courier when password field is missing")
     public  void checkStatusCodeBodyCreateCourierWithoutFillInPassword() {
@@ -106,4 +107,5 @@ public class ScooterRegisterCourierTest extends BaseTest {
 //                .and()
 //                .body("message", equalTo("Недостаточно данных для создания учетной записи"));
 //    }
+
 }
